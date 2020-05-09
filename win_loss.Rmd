@@ -1,0 +1,27 @@
+---
+title: "Wins"
+author: "Rodrigo Motoyama"
+date: "5/8/2020"
+output: html_document
+---
+# Estatística "Win" - Todos por um, e esse um sai como herói (ou vilão)
+
+## Record
+Se você já assistiu alguns jogos da MLB, você provavelmente já se deparou com o "record" de um arremessador. Aqueles dois numerozinhos separados por um "-", sabe?
+![](/home/rodrigo/Documents/Projetos R/BeisebolComDados/minorLeagueAnalysis/imagens/AndreRienzoRecord.jpg)
+Na foto, podemos ver o primeiro arremessador brasileiro a chegar na MLB, Andre Rienzo. Na ocasião, Rienzo possuia um "record" de 2-2. "Mas, 2-2 o quê?" Bom, cada número representa uma estatística. O primeiro 2 é o número de vitórias que o Rienzo conseguiu na temporada até aquele momento, e o segundo 2 é o número de derrotas. Fácil, né? Você pode pensar - "Quanto mais o arremessador ganhar, melhor ele é, e quanto mais ele perder, pior ele é." Quem dera se as coisas fossem simples assim haha.
+
+## Quality start
+![](/home/rodrigo/Documents/Projetos R/BeisebolComDados/minorLeagueAnalysis/imagens/plot_win_loss.png)
+
+Sem entender como uma vitória ou derrota é designada para um arremessador, poderiamos julgar por esses dados que em 2015
+
+
+
+
+
+
+
+
+
+

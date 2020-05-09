@@ -1,0 +1,52 @@
+---
+title: "Wins"
+author: "Rodrigo Motoyama"
+date: "5/8/2020"
+output: html_document
+---
+# Estatística "Win" - Todos por um, e esse um sai como herói (ou vilão)
+
+## Record
+Se você já assistiu alguns jogos da MLB, você provavelmente já se deparou com o "record" de um arremessador. Aqueles dois numerozinhos separados por um "-", sabe?
+![](/home/rodrigo/Documents/Projetos R/BeisebolComDados/minorLeagueAnalysis/imagens/AndreRienzoRecord.jpg)
+Na foto, podemos ver o primeiro arremessador brasileiro a chegar na MLB, Andre Rienzo. Na ocasião, Rienzo possuia um "record" de 2-2. "Mas, 2-2 o quê?" Bom, cada número representa uma estatística. O primeiro 2 é o número de vitórias que o Rienzo conseguiu na temporada até aquele momento, e o segundo 2 é o número de derrotas. Fácil, né? Você pode pensar - "Quanto mais o arremessador ganhar, melhor ele é, e quanto mais ele perder, pior ele é." Quem dera se as coisas fossem simples assim haha.
+
+```{r setup, include=T}
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(janitor)
+library(ggplot2)
+
+
+path <- map(1:3, ~str_c("home/rodrigo/Documents/Projetos R/BeisebolComDados/minorLeagueAnalysis/data/fangraphs-minor-league-leaders (", .x, ").csv"))
+milb_data <- map(path, read_csv) %>%
+  bind_cols() %>%
+  clean_names() %>%
+  select(-ends_with(c("1", "2")))
+milb_data %>%
+  filter(name %in% c("Bo Takahashi", "Daniel Missaki",
+                     "Igor Januario", "Heitor Tokar",
+                     "Eric Pardinho", "Andre Rienzo",
+                     "Jacob deGrom")) %>%
+  select(season, name, team, age, ip, k_percent, bb_percent, era, fip, babip, sw_str_percent, w, l) %>%
+  group_by(nome = name, season) %>%
+  summarise(total_vitoria = sum(w), total_derrota = sum(l), "Innings arremessados" = sum(ip)) %>%
+  ggplot() +
+  geom_point(aes(x = total_vitoria, y = total_derrota,
+                 size = `Innings arremessados`,
+                 colour = nome))+
+  xlab("Derrotas")+ylab("Vitorias")+
+  geom_text(aes(x = total_vitoria, y = total_derrota, label=season),hjust=0, vjust=0)+
+  ylim(0, 11)+
+  xlim(0, 11)+
+  theme(
+    legend.position = "bottom",
+    legend.box = "vertical")+
+  ggtitle("Total de vitorias/derrotas por temporada")
+
+
+
+```
+
+
