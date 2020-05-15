@@ -4,22 +4,101 @@ author: "Rodrigo Motoyama"
 date: "5/8/2020"
 output: html_document
 ---
+```{r include = FALSE}
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(janitor)
+library(ggplot2)
+
+path <- map(1:3, ~str_c("data/fangraphs-minor-league-leaders (", .x, ").csv"))
+milb_data <- map(path, read_csv) %>%
+  bind_cols() %>%
+  clean_names() %>%
+  select(-ends_with(c("1", "2")))
+```
+
 # Estatística "Win" - Todos por um, e esse um sai como herói (ou vilão)
 
 ## Record
-Se você já assistiu alguns jogos da MLB, você provavelmente já se deparou com o "record" de um arremessador. Aqueles dois numerozinhos separados por um "-", sabe?
+Se você já assistiu alguns jogos da MLB, você provavelmente já se deparou com o “record” de um arremessador. Aqueles dois numerozinhos separados por um “-”, sabe?
+
 ![](/home/rodrigo/Documents/Projetos R/BeisebolComDados/minorLeagueAnalysis/imagens/AndreRienzoRecord.jpg)
-Na foto, podemos ver o primeiro arremessador brasileiro a chegar na MLB, Andre Rienzo. Na ocasião, Rienzo possuia um "record" de 2-2. "Mas, 2-2 o quê?" Bom, cada número representa uma estatística. O primeiro 2 é o número de vitórias que o Rienzo conseguiu na temporada até aquele momento, e o segundo 2 é o número de derrotas. Fácil, né? Você pode pensar - "Quanto mais o arremessador ganhar, melhor ele é, e quanto mais ele perder, pior ele é." Quem dera se as coisas fossem simples assim haha.
 
-## Quality start
-![](/home/rodrigo/Documents/Projetos R/BeisebolComDados/minorLeagueAnalysis/imagens/plot_win_loss.png)
+Na foto, podemos ver o primeiro arremessador brasileiro a chegar na MLB, Andre Rienzo. Na ocasião, Rienzo possuía um “record” de 2–2. “Mas, 2–2 o quê?” Bom, cada número representa uma estatística. O primeiro 2 é o número de vitórias que o Rienzo conseguiu na temporada até aquele momento, e o segundo 2 é o número de derrotas. Fácil, né? Você pode pensar — “Quanto mais o arremessador ganhar, melhor ele é, e quanto mais ele perder, pior ele é.” Quem dera se as coisas fossem simples assim.
 
-Sem entender como uma vitória ou derrota é designada para um arremessador, poderiamos julgar por esses dados que em 2015
+## Quanto mais vitórias melhor?
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+milb_data %>%
+  filter(name %in% c("Bo Takahashi", "Daniel Missaki", "Andre Rienzo",
+                     "Thyago Vieira", "Murilo Gouvea")) %>%
+  select(season, name, team, age, ip, k_percent, bb_percent, era, fip, babip, sw_str_percent, w, l) %>%
+  group_by(nome = name, season) %>%
+  summarise(total_vitoria = sum(w), total_derrota = sum(l), "entradas arremessados" = sum(ip)) %>%
+  filter(!is.na(total_vitoria), !is.na(total_derrota)) %>% 
+  ggplot() +
+  geom_point(aes(x = total_derrota, y = total_vitoria,
+                 size = `entradas arremessados`,
+                 colour = nome))+
+  xlab("Derrotas")+ylab("Vitorias")+
+  geom_text(aes(x = total_derrota, y = total_vitoria, label=season))+
+  ylim(0, 11)+
+  xlim(0, 11)+
+  theme(
+    legend.position = "bottom",
+    legend.box = "vertical")+
+  ggtitle("Total de vitorias/derrotas por temporada")
+
+```
 
 
+<!-- ![](/home/rodrigo/Documents/Projetos R/BeisebolComDados/minorLeagueAnalysis/imagens/plot_win_loss.png) -->
+
+Nesse gráfico, temos uma comparação do número de derrotas pelo número de vitórias por temporada de 6 jogadores brasileiros que atuaram na MILB (Minor League Baseball) de 2006 até 2019. Sem entender como uma vitória ou derrota é designada para um arremessador, poderíamos julgar por esses dados que em 2015, Bo Takahashi foi muito melhor do que o Daniel Missaki, pelo simples fato deles estar com bem mais vitórias e menos derrotas, mas será que isso é suficiente?
+
+## Vitórias e derrotas 
+
+Um arremessador recebe a estatística de vitória (W) quando seu time assume a liderança de vez, com duas exceções. A primeira é que se o arremessador for o abridor (SP/Starting Pitcher), ele precisa arremessar pelo menos metade do jogo, ou seja, 5 entradas na MLB, para se qualificar para a vitória. Além disso, se ele for substituído por um relevo (Relief Pitcher) após arremessar 5+ entradas, seu time precisa se manter na liderança até o fim do jogo, caso contrário, ele perde o direito da vitória. 
+
+Existe tambem um caso raro onde um relevo pode ser considerado ineficaz, fazendo com que o anotador não o considere adequado para receber a vitória. Por exemplo, um relevo entra no jogo com uma liderança de 1 corrida e leve 3 pontos. Mas no entrada seguinte, seu time recupere a liderança e esse relevo é substituido. Nesse caso, o anotador pode designar a vitória para o próximo arremessador, porque esse foi considerado ineficaz.
+
+Já uma derrota, é dada para o arremessador responsável pela corrida de virada do time adversário que nunca mais perde essa liderança. Simples assim.
+
+Vamos ver alguns exemplos para tentar entender o que essa estatística de fato mede.
+
+1. Em 2016 no WBC Qualifier (classificatórias para a "copa do mundo" de beisebol), Bo Takahashi abriu o jogo contra Israel. Ele arremessou 4 entradas e cedeu a única corrida do jogo na derrota por 1x0 do Brasil contra Israel. Takahashi cedeu apenas 2 rebatidas validas (H/hits), 1 base por bolas (BB/walk), e conseguiu 5 eliminações por strike (SO/strike out). Mesmo assim, ele saiu com a derrota porque cedeu a corrida da derrota. 
+
+2. Ainda em 2016 no WBC Qualifier, Rienzo abriu o jogo contra a Grã-Bretanha arremessando 5 entradas, cedendo 3 rebatidas validas, 3 corridas, mas somente uma merecida (Earned run), 0 bases por bola, e 8 eliminações por strike, quase 2 SO por entrada. Porém, o Brasil não conseguiu empatar nem tomar a liderança em nenhum momento do jogo, fazendo com que Rienzo recebesse a derrota, apesar de ter arremessado 5 entradas muito bem.
+
+3. Nesse mesmo jogo contra a Grã-Bretanha, o arremessador britânico que abriu o jogo arremessou apenas 4 entradas, tornando ele não qualificado a receber a vitória. Por isso que o arremessador seguinte recebe a vitória em seu lugar.
+
+4. Em 2013 no WBC, Brasil enfrentou a China e estava vencendo por 2 a 0 até a parte baixa da oitava entrada, quando ocorreu a virada da China. Nessa entrada, Murilo Gouvea começa arremessando e consegue fazer apena uma eliminação antes de ceder uma rebatida simples, duas bases por bola e ser substituído. Nessa entrada, o Brasil cedeu 5 corridas para a China. Como as 3 primeiras corridas eram de responsabilidade do Murilo Gouvea, ele saiu do jogo como o arremessador perdedor (LP/Losing Pitcher), mesmo não sendo ele que cedeu as rebatidas para aquelas corridas.
 
 
+## Valor de uma vitória/derrota
 
+Bom, entendemos como vitórias e derrotas são designadas, mas qual o valor delas? O que elas de fato medem? Na minha opinião, nada. Não conseguimos extrair valor de um arremessador somente olhando o record. Porque não basta que o arremessador arremesse bem, ele precisa incentivar o seu time a marcar pontos, caso contrário, ele sairá com a derrota. É a responsabilidade do jogo inteiro em cima de uma pessoa, sendo que temos outras 8 ou 9 em campo. 
+
+Eu entendo o apelo desse tipo de estatística na era "dead ball", onde os rebatedores não se saiam tão bem (poucos chegavam a 10+ home runs), e um abridor arremessava quase todos os jogos inteiros por conta disso. Mas para o beisebol atual, esse tipo de medição não faz sentido. Se um jogador recebe a vitória, não quer dizer que desempenho dele foi bom ou ruim, você não consegue inferir nada sobre a atuação do arremessador pelo record dele. 
+
+Uma vitória ou derrota possui valor apenas para o time como um todo. Temos muitas estatísticas que nos ajudam a entender o desempenho de arremessadores, mas W e L não são elas. Elas apenas mascaram aparições ruins que recebem W porque o time marcou mais corridas, e aparições excelentes (Jacob deGrom) que sofem uma derrota por falta de apoio do time.
+
+## Considerações finais
+
+Existem muitas outras análises possíveis de se fazer em cima dessas estatísticas. Por exemplo, temos casos onde o prêmio CY Young (Prêmio de melhor arremessador de cada liga) foi dado a jogadores que tiveram muitas vitórias, mas falharam em diversos outros aspectos, por causa de uma visão limitada sobre estatísticas de arremessadores. Porém, como um primeiro post, eu decidi explorar isso no âmbito do beisebol do Brasil.
+
+Espero que vocês tenham gostado do texto e das análises. Pretendo usar dados de brasileiros na minor/major em alguns outros posts, mas esse não será o foco. Tentarei intercalar os posts entre estatísticas avançadas (wOBA, SwStr%, wRC+ e etc.), também conhecidas como saberstats, e estatísticas básicas (ERA, BA, OBP, SLG e etc.).
+
+Se vocês gostaram, deixem alguns aplausos para que eu entenda que tipo de post mais agrada vocês e comentem o que acharam que faltou ou que não ficou claro, por favor.
+
+Se possível fiquem em casa e lavem as mãos! 
+
+## Referências
+- [Wins](http://m.mlb.com/glossary/standard-stats/win)
+- [Loss](http://m.mlb.com/glossary/standard-stats/loss)
+- [Box Score Brasil x Israel](https://www.mlb.com/gameday/brazil-vs-israel/2016/09/23/467859#game_tab=box,game=467859,game_state=final)
+- [Box Score Brasil x Grã-Bretanha](https://www.mlb.com/gameday/brazil-vs-great-britain/2016/09/24/467861#game_tab=box,game=467861,game_state=final)
+- [Box Score Brasil x China](http://mlb.mlb.com/wbc/2013/gameday/index.jsp?gid=2013_03_05_braint_chnint_1&mode=box)
 
 
 
